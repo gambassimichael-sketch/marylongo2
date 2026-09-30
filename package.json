@@ -1,0 +1,15 @@
+{
+  "name": "mary-longo-wedding-planner",
+  "version": "1.0.0",
+  "description": "Sito di Mary Longo Wedding Planner (Lecce) — statico, multilingua EN/IT/FR/ES",
+  "scripts": {
+    "build": "node build.js",
+    "serve": "node serve.js",
+    "images": "node tools/images.js"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "sharp": "^0.35.5"
+  },
+  "private": true
+}

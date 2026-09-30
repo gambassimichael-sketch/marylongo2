@@ -1,0 +1,13 @@
+# dipendenze
+node_modules/
+
+# materiale di lavoro locale (copia del vecchio sito, originali scaricati, provini)
+_orig/
+_work/
+
+# configurazioni locali dell'editor / Claude
+.claude/
+
+# sistema
+.DS_Store
+Thumbs.db
