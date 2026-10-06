@@ -6,6 +6,8 @@ const I18N = require("./site/assets/js/i18n.js");
 
 const OUT = path.join(__dirname, "site");
 const EN = I18N.dict.en;
+const LEGAL = require("./site/assets/js/i18n-legal.js");
+for (const k in LEGAL) I18N.langs.forEach((l, i) => (I18N.dict[l][k] = LEGAL[k][i]));
 const YEAR = new Date().getFullYear();
 
 /* ---------- helpers ---------- */
@@ -149,6 +151,7 @@ function footer() {
     </div>
     <div class="ft__bottom">
       <span>&copy; ${YEAR} Mary Longo Wedding Planner · <span data-i18n="foot.rights">${t("foot.rights")}</span></span>
+      <span class="ft__legal"><a href="/privacy" data-i18n="foot.privacy">${t("foot.privacy")}</a> · <a href="/cookie-policy" data-i18n="foot.cookie">${t("foot.cookie")}</a> · <button type="button" class="linkbtn" data-cc-open data-i18n="cc.open">${t("cc.open")}</button></span>
       <span><span data-i18n="foot.vat">${t("foot.vat")}</span> 03623540755 · ${ADDRESS}</span>
     </div>
   </footer>
@@ -159,7 +162,29 @@ function footer() {
   </div>`;
 }
 
-function layout({ page, active, bodyClass = "", head = "", body }) {
+/* Banner cookie (GDPR / linee guida Garante): rifiuto facile quanto l accettazione, X = rifiuta */
+function cookieBanner() {
+  return `
+  <div class="cc" role="dialog" aria-modal="false" aria-labelledby="cc-title" hidden>
+    <div class="cc__box">
+      <button class="cc__x" type="button" data-cc="reject" data-i18n-attr="aria-label:cc.close" aria-label="${t("cc.close")}"><i></i><i></i></button>
+      <p class="cc__title" id="cc-title" data-i18n="cc.title">${t("cc.title")}</p>
+      <p class="cc__text" data-i18n="cc.text">${t("cc.text")}</p>
+      <div class="cc__prefs" hidden>
+        <label class="cc__opt"><input type="checkbox" checked disabled><span><b data-i18n="cc.nec">${t("cc.nec")}</b><small data-i18n="cc.necD">${t("cc.necD")}</small></span></label>
+        <label class="cc__opt"><input type="checkbox" data-cc-ext><span><b data-i18n="cc.ext">${t("cc.ext")}</b><small data-i18n="cc.extD">${t("cc.extD")}</small></span></label>
+      </div>
+      <div class="cc__btns">
+        <button class="btn btn--sm" type="button" data-cc="custom" data-i18n="cc.custom">${t("cc.custom")}</button>
+        <button class="btn btn--sm" type="button" data-cc="save" data-i18n="cc.save" hidden>${t("cc.save")}</button>
+        <button class="btn btn--dark btn--sm" type="button" data-cc="reject" data-i18n="cc.reject">${t("cc.reject")}</button>
+        <button class="btn btn--dark btn--sm" type="button" data-cc="accept" data-i18n="cc.accept">${t("cc.accept")}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function layout({ page, active, bodyClass = "", head = "", body, scripts = "" }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -182,9 +207,9 @@ function layout({ page, active, bodyClass = "", head = "", body }) {
   <link rel="icon" type="image/png" sizes="192x192" href="${img("msn-300x300.png")}">
   <link rel="apple-touch-icon" href="${img("msn-300x300.png")}">
   <script>try{var l=localStorage.getItem("ml-lang");if(l&&l!=="en")document.documentElement.className+=" i18n-wait"}catch(e){}</script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cormorant+Upright:wght@300;400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="preload" href="/assets/fonts/jost-300-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/cormorant-upright-300-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/assets/css/style.css">${head}
 </head>
 <body class="${bodyClass}">
@@ -203,7 +228,9 @@ ${footer()}
     <span class="lb__count"></span>
   </div>
 
-  <script src="/assets/js/i18n.js"></script>
+${cookieBanner()}
+
+  <script src="/assets/js/i18n.js"></script>${scripts}
   <script src="/assets/js/main.js"></script>
 </body>
 </html>
@@ -653,7 +680,15 @@ pages["contatti.html"] = layout({
 
     <section class="map">
       <div class="map__label">${tag("span", "ct.visit", 'class="kicker"')}<span>${ADDRESS}</span></div>
-      <iframe title="Mary Longo Wedding Planner — ${ADDRESS}" src="https://www.google.com/maps?q=Via+Pistoia+8,+73100+Lecce&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="map__frame" data-map-src="https://www.google.com/maps?q=Via+Pistoia+8,+73100+Lecce&output=embed" data-map-title="Mary Longo Wedding Planner — ${ADDRESS}">
+        <div class="map__consent">
+          ${tag("p", "cc.mapText")}
+          <div class="btn-row">
+            <button class="btn btn--dark btn--sm" type="button" data-map-load data-i18n="cc.mapBtn">${t("cc.mapBtn")}</button>
+            <a class="btn btn--sm" href="https://www.google.com/maps/search/?api=1&query=Via+Pistoia+8,+73100+Lecce" target="_blank" rel="noopener" data-i18n="cc.mapOpen">${t("cc.mapOpen")}</a>
+          </div>
+        </div>
+      </div>
     </section>`,
 });
 
@@ -713,6 +748,27 @@ PROJECTS.forEach((p, idx) => {
     </a>`,
   });
 });
+
+const legalPage = (key) => layout({
+  page: key,
+  active: "",
+  bodyClass: "is-legal",
+  head: `
+  <link rel="canonical" href="https://www.marylongoweddingplanner.it/${key === "cookie" ? "cookie-policy" : "privacy"}/">`,
+  scripts: `
+  <script src="/assets/js/i18n-legal.js"></script>`,
+  body: `
+    <section class="sec legal">
+      <div class="wrap wrap--narrow">
+        <span class="orn orn--left" aria-hidden="true"></span>
+        ${tag("h1", key + ".title", 'class="h-display"')}
+        ${tag("p", "legal.updated", 'class="legal__date"')}
+        ${tag("div", key + ".body", 'class="legal__body"')}
+      </div>
+    </section>`,
+});
+pages["privacy.html"] = legalPage("privacy");
+pages["cookie-policy.html"] = legalPage("cookie");
 
 /* ---------- controllo traduzioni + scrittura ---------- */
 const missing = [];

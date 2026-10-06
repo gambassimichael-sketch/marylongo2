@@ -62,6 +62,77 @@
     b.addEventListener("click", function () { applyLang(b.getAttribute("data-set-lang"), true); });
   });
 
+  /* ---------- Consenso cookie (GDPR): la scelta vale 6 mesi, poi viene richiesta di nuovo ---------- */
+  var CC_KEY = "ml-consent", CC_DAYS = 180;
+  var cc = $(".cc");
+  function readConsent() {
+    try {
+      var v = JSON.parse(localStorage.getItem(CC_KEY));
+      if (v && v.date && Date.now() - v.date < CC_DAYS * 864e5) return v;
+    } catch (e) {}
+    return null;
+  }
+  function loadMaps() {
+    $$(".map__frame[data-map-src]").forEach(function (box) {
+      if ($("iframe", box)) return;
+      var f = document.createElement("iframe");
+      f.src = box.getAttribute("data-map-src");
+      f.title = box.getAttribute("data-map-title") || "Google Maps";
+      f.loading = "lazy";
+      f.referrerPolicy = "no-referrer-when-downgrade";
+      box.innerHTML = "";
+      box.appendChild(f);
+      box.classList.add("is-loaded");
+    });
+  }
+  function applyConsent(v) { if (v && v.ext) loadMaps(); }
+  function saveConsent(ext) {
+    var v = { ext: !!ext, date: Date.now(), v: 1 };
+    try { localStorage.setItem(CC_KEY, JSON.stringify(v)); } catch (e) {}
+    applyConsent(v);
+    closeBanner();
+  }
+  function setPrefs(open) {
+    $(".cc__prefs", cc).hidden = !open;
+    $('[data-cc="custom"]', cc).hidden = open;
+    $('[data-cc="save"]', cc).hidden = !open;
+  }
+  function openBanner(withPrefs) {
+    if (!cc) return;
+    var cur = readConsent();
+    $("[data-cc-ext]", cc).checked = !!(cur && cur.ext);
+    setPrefs(!!withPrefs);
+    cc.hidden = false;
+    requestAnimationFrame(function () { cc.classList.add("is-on"); });
+  }
+  function closeBanner() {
+    if (!cc) return;
+    cc.classList.remove("is-on");
+    setTimeout(function () { cc.hidden = true; }, 350);
+  }
+  if (cc) {
+    cc.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-cc]");
+      if (!b) return;
+      var act = b.getAttribute("data-cc");
+      if (act === "accept") saveConsent(true);
+      else if (act === "reject") saveConsent(false);
+      else if (act === "custom") setPrefs(true);
+      else if (act === "save") saveConsent($("[data-cc-ext]", cc).checked);
+    });
+    var consent = readConsent();
+    if (consent) applyConsent(consent); else openBanner(false);
+  }
+  // delega: i pulsanti "Preferenze cookie" possono essere ricreati dal cambio lingua
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-cc-open]")) { e.preventDefault(); openBanner(true); }
+    if (e.target.closest("[data-map-load]")) {
+      var cur = readConsent();
+      saveConsent(true);   // caricare la mappa equivale ad accettare i contenuti esterni
+      if (!cur) closeBanner();
+    }
+  });
+
   /* ---------- Header compatto allo scroll + torna su ---------- */
   var hdr = $(".hdr");
   var totop = $("[data-totop]");
