@@ -23,8 +23,9 @@ const photo = (id) => {
   if (!p) throw new Error("Foto inesistente: " + id);
   return p;
 };
-const ph = (id) => `/assets/img/foto/${photo(id).file}.jpg`;      // risoluzione nativa
-const hd = (id) => `/assets/img/foto/${photo(id).file}@2x.jpg`;   // 2x per sfondi grandi e lightbox
+const sm = (id) => `/assets/img/foto/${photo(id).file}-sm.webp`;  // miniatura (lato lungo 900px)
+const ph = (id) => `/assets/img/foto/${photo(id).file}.webp`;     // risoluzione nativa (max 2048px)
+const hd = (id) => `/assets/img/foto/${photo(id).file}${photo(id).hd ? "@2x" : ""}.webp`; // sfondi grandi e lightbox
 const ratio = (id) => photo(id).w / photo(id).h;
 
 const PHONE = "+39 338 7441562";
@@ -275,11 +276,12 @@ const quickContacts = () => `
 
 /* Matrimoni: ogni foto appartiene al proprio matrimonio; la prima è la copertina */
 const PROJECTS = [
-  { n: 1, roman: "I",   key: "rw.w1", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
-  { n: 2, roman: "II",  key: "rw.w2", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
-  { n: 3, roman: "III", key: "rw.w3", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
-  { n: 4, roman: "IV",  key: "rw.w4", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
-  { n: 5, roman: "V",   key: "rw.w5", pos: "center 45%", photos: [58, 59, 57, 60] },
+  { n: 1, roman: "I",   key: "rw.salento", text: "rw.salento.text", pos: "center 62%", photos: [121, 64, 62, 63, 61, 65, 68, 87, 67, 72, 76, 86, 66, 69, 88, 70, 93, 95, 84, 71, 89, 73, 96, 92, 74, 75, 94, 77, 80, 99, 78, 79, 91, 81, 90, 85, 117, 109, 128, 105, 119, 114, 122, 110, 98, 97, 101, 106, 107, 115, 102, 103, 108, 104, 113, 124, 100, 111, 82, 112, 116, 123, 118] },
+  { n: 2, roman: "II",  key: "rw.w1", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
+  { n: 3, roman: "III", key: "rw.w2", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
+  { n: 4, roman: "IV",  key: "rw.w3", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
+  { n: 5, roman: "V",   key: "rw.w4", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
+  { n: 6, roman: "VI",  key: "rw.w5", pos: "center 45%", photos: [58, 59, 57, 60] },
 ];
 const ALT = "Real Wedding — Mary Longo Wedding Planner";
 
@@ -288,7 +290,7 @@ const portfolioGrid = () => `
         <div class="pf">
           ${PROJECTS.map((p, i) => `
           <a class="pf__item${i === 0 ? " pf__item--big" : ""} reveal d${(i % 3) + 1}" href="/real-wedding-${p.n}">
-            <img src="${i === 0 ? hd(p.photos[0]) : ph(p.photos[0])}" alt="${ALT} — ${t(p.key)}" loading="lazy" style="object-position:${p.pos}">
+            <img src="${i === 0 ? ph(p.photos[0]) : sm(p.photos[0])}" alt="${ALT} — ${t(p.key)}" loading="lazy" decoding="async" style="object-position:${p.pos}">
             <span class="pf__cap">
               <span class="pf__k">Real Wedding · ${p.roman}</span>
               ${tag("span", p.key, 'class="pf__t"')}
@@ -310,6 +312,7 @@ pages["index.html"] = layout({
   bodyClass: "is-home",
   head: `
   <link rel="canonical" href="https://www.marylongoweddingplanner.it/">
+  <link rel="preload" as="image" href="${hd(3)}" fetchpriority="high">
   <script type="application/ld+json">
   {"@context":"https://schema.org","@graph":[
     {"@type":["LocalBusiness","ProfessionalService"],"@id":"https://www.marylongoweddingplanner.it/#business","name":"Mary Longo Wedding Planner","description":"Wedding & event planner in Lecce: weddings, destination weddings and bespoke events in Puglia and Salento.","url":"https://www.marylongoweddingplanner.it/","image":"https://www.marylongoweddingplanner.it/wp-content/uploads/2023/02/slider_1.jpeg","logo":"https://www.marylongoweddingplanner.it/wp-content/uploads/2020/10/logo-maria-longo.jpg","telephone":"${PHONE}","email":"${MAIL}","priceRange":"€€","address":{"@type":"PostalAddress","streetAddress":"Via Pistoia, 8","addressLocality":"Lecce","postalCode":"73100","addressRegion":"Puglia","addressCountry":"IT"},"geo":{"@type":"GeoCoordinates","latitude":40.3529,"longitude":18.1743},"areaServed":["Lecce","Salento","Puglia","Italia"],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"18:30"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"09:00","closes":"13:30"}],"sameAs":["${FB}","${IG}","${MC}"],"founder":{"@type":"Person","name":"Mary Longo","jobTitle":"Wedding & Event Planner, Celebrant","knowsLanguage":["it","en","fr"]},"aggregateRating":{"@type":"AggregateRating","ratingValue":"5","reviewCount":"3","bestRating":"5"}},
@@ -449,7 +452,7 @@ pages["index.html"] = layout({
       </div>
       <div class="ig__grid">
         ${[43, 24, 54, 28, 5, 17]
-          .map((f) => `<a href="${IG}" target="_blank" rel="noopener" aria-label="Instagram @mary_longo_wp"><img src="${ph(f)}" alt="" loading="lazy"></a>`).join("\n        ")}
+          .map((f) => `<a href="${IG}" target="_blank" rel="noopener" aria-label="Instagram @mary_longo_wp"><img src="${sm(f)}" alt="" loading="lazy"></a>`).join("\n        ")}
       </div>
     </section>
 
@@ -659,7 +662,7 @@ pages["real-wedding.html"] = layout({
   active: "rw",
   head: `
   <link rel="canonical" href="https://www.marylongoweddingplanner.it/real-wedding/">`,
-  body: `${pageHero(40, "home.pf.kicker", "pf.title", "center 55%")}
+  body: `${pageHero(121, "home.pf.kicker", "pf.title", "center 55%")}
 
     <section class="sec">
       <div class="wrap">
@@ -684,7 +687,7 @@ PROJECTS.forEach((p, idx) => {
         <a class="rwh__back" href="/real-wedding">← <span data-i18n="rw.all">${t("rw.all")}</span></a>
         <span class="kicker">Real Wedding · ${p.roman}</span>
         ${tag("h1", p.key, 'class="h-display"')}
-        ${tag("p", "rw.text")}
+        ${tag("p", p.text || "rw.text")}
         <nav class="rwh__nav" aria-label="Real Wedding">${PROJECTS.map((q) => `<a href="/real-wedding-${q.n}"${q.n === p.n ? ' class="is-active" aria-current="page"' : ""}>${q.roman}</a>`).join("")}</nav>
       </div>
       <div class="rwh__media reveal d1"><img src="${hd(cover)}" alt="${ALT} — ${t(p.key)}" style="object-position:${p.pos}"></div>
@@ -694,7 +697,7 @@ PROJECTS.forEach((p, idx) => {
       <div class="wrap">
         <div class="shead reveal"><span class="orn" aria-hidden="true"></span>${tag("span", "rw.gallery", 'class="kicker"')}<h2 class="stitle">${p.photos.length} <span data-i18n="rw.photos">${t("rw.photos")}</span></h2></div>
         <div class="gal">
-          ${p.photos.map((id, i) => `<figure class="gal__item reveal" style="--r:${ratio(id).toFixed(3)}"><img data-lb data-full="${hd(id)}" src="${ph(id)}" alt="${ALT} — ${t(p.key)} ${i + 1}" loading="lazy"></figure>`).join("\n          ")}
+          ${p.photos.map((id, i) => `<figure class="gal__item reveal" style="--r:${ratio(id).toFixed(3)}"><img data-lb data-full="${hd(id)}" src="${sm(id)}" decoding="async" alt="${ALT} — ${t(p.key)} ${i + 1}" loading="lazy"></figure>`).join("\n          ")}
         </div>
       </div>
     </section>

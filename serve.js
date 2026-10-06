@@ -1,7 +1,7 @@
 /* Server locale per l'anteprima: node serve.js  →  http://localhost:4321 */
 const http = require("http"), fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "site");
-const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".svg": "image/svg+xml" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".webp": "image/webp" };
 http.createServer((req, res) => {
   if (req.method === "POST") { res.writeHead(200); return res.end("ok"); }
   let p = decodeURIComponent(req.url.split("?")[0]);
