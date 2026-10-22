@@ -17,6 +17,9 @@ function t(k) {
 }
 const tag = (name, key, attrs = "") => `<${name} data-i18n="${key}"${attrs ? " " + attrs : ""}>${t(key)}</${name}>`;
 const img = (f) => `/assets/img/${f}`;
+/* CSS e JS con ?v=<hash del contenuto>: Netlify li fa tenere in cache 7 giorni (netlify.toml),
+   così a ogni modifica i browser scaricano subito la versione nuova */
+const asset = (f) => `/assets/${f}?v=${require("crypto").createHash("md5").update(fs.readFileSync(path.join(OUT, "assets", f))).digest("hex").slice(0, 8)}`;
 
 /* Foto: catalogo generato da tools/images.js (id numerico → file ottimizzato) */
 const PHOTOS = require("./tools/photos.json");
@@ -225,8 +228,8 @@ function layout({ page, active, bodyClass = "", head = "", pre = "", body, scrip
   <script>try{var l=localStorage.getItem("ml-lang");if(l&&l!=="en")document.documentElement.className+=" i18n-wait"}catch(e){}</script>
   <link rel="preload" href="/assets/fonts/jost-300-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cormorant-upright-300-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/assets/css/fonts.css">
-  <link rel="stylesheet" href="/assets/css/style.css">${head}
+  <link rel="stylesheet" href="${asset("css/fonts.css")}">
+  <link rel="stylesheet" href="${asset("css/style.css")}">${head}
 </head>
 <body class="${bodyClass}">${pre}
 ${header(active)}
@@ -246,8 +249,8 @@ ${footer()}
 
 ${cookieBanner()}
 
-  <script src="/assets/js/i18n.js"></script>${scripts}
-  <script src="/assets/js/main.js"></script>
+  <script src="${asset("js/i18n.js")}"></script>${scripts}
+  <script src="${asset("js/main.js")}"></script>
 </body>
 </html>
 `;
@@ -782,7 +785,7 @@ const legalPage = (key) => layout({
   head: `
   <link rel="canonical" href="https://www.marylongoweddingplanner.it/${key === "cookie" ? "cookie-policy" : "privacy"}/">`,
   scripts: `
-  <script src="/assets/js/i18n-legal.js"></script>`,
+  <script src="${asset("js/i18n-legal.js")}"></script>`,
   body: `
     <section class="sec legal">
       <div class="wrap wrap--narrow">
