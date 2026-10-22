@@ -656,9 +656,10 @@ p { margin: 0 0 1.1em; }
    alcuni petali; poi il sipario si solleva come un velo sulla hero.
    Tutto in CSS: anche se il JS non parte, l'intro si chiude da sola.
    ========================================================================== */
+/* hidden nel markup: senza questo CSS (o con un CSS vecchio in cache) l'intro resta invisibile */
 .intro { display: none; }
 .intro-on .intro {
-  display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; cursor: pointer;
+  display: grid !important; place-items: center; position: fixed; inset: 0; z-index: 200; cursor: pointer;
   background: radial-gradient(ellipse 80% 70% at 50% 45%, #fff 0%, var(--ivory) 58%, var(--blush) 100%);
   animation: introOut 1.2s cubic-bezier(.7, 0, .25, 1) 3.7s forwards;
 }
@@ -716,7 +717,7 @@ p { margin: 0 0 1.1em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro { display: none !important; }
+  .intro, .intro-on .intro { display: none !important; }
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
   html { scroll-behavior: auto; }
 }

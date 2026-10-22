@@ -193,7 +193,7 @@ const PETALS = [[6, 0, 6.5, 0.9], [17, 0.9, 7.5, 0.6], [29, 0.3, 6, 1], [41, 1.4
 const INTRO_HEAD = `
   <script>try{if(!sessionStorage.getItem("ml-intro")&&!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.className+=" intro-on"}catch(e){}</script>`;
 const intro = () => `
-  <div class="intro" data-intro>
+  <div class="intro" data-intro hidden>
     <div class="intro__petals" aria-hidden="true">${PETALS.map(([x, d, s, z]) => `<i style="--x:${x}%;--d:${d}s;--s:${s}s;--z:${z}"></i>`).join("")}</div>
     <div class="intro__in">
       <img class="intro__logo" src="${img("logo-maria-longo@2x.jpg")}" alt="Mary Longo Wedding Planner" width="562" height="340">
