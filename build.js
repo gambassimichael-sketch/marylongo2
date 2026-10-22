@@ -184,7 +184,23 @@ function cookieBanner() {
   </div>`;
 }
 
-function layout({ page, active, bodyClass = "", head = "", body, scripts = "" }) {
+/* Intro della home: logo, filo rosa che si disegna, frase e petali; poi si solleva come un velo.
+   Compare una volta per sessione (classe intro-on messa dallo script in <head>), clic per saltarla. */
+const PETALS = [[6, 0, 6.5, 0.9], [17, 0.9, 7.5, 0.6], [29, 0.3, 6, 1], [41, 1.4, 8, 0.7], [53, 0.6, 7, 0.85], [64, 0.1, 6.8, 0.65], [75, 1.1, 7.2, 1], [86, 0.4, 6.4, 0.75], [94, 1.6, 7.8, 0.6]];
+const INTRO_HEAD = `
+  <script>try{if(!sessionStorage.getItem("ml-intro")&&!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.className+=" intro-on"}catch(e){}</script>`;
+const intro = () => `
+  <div class="intro" data-intro>
+    <div class="intro__petals" aria-hidden="true">${PETALS.map(([x, d, s, z]) => `<i style="--x:${x}%;--d:${d}s;--s:${s}s;--z:${z}"></i>`).join("")}</div>
+    <div class="intro__in">
+      <img class="intro__logo" src="${img("logo-maria-longo@2x.jpg")}" alt="Mary Longo Wedding Planner" width="562" height="340">
+      <span class="intro__line" aria-hidden="true"></span>
+      ${tag("p", "intro.line", 'class="intro__txt"')}
+    </div>
+    <button class="intro__skip" type="button" data-i18n="ui.skip">${t("ui.skip")}</button>
+  </div>`;
+
+function layout({ page, active, bodyClass = "", head = "", pre = "", body, scripts = "" }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -212,7 +228,7 @@ function layout({ page, active, bodyClass = "", head = "", body, scripts = "" })
   <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/assets/css/style.css">${head}
 </head>
-<body class="${bodyClass}">
+<body class="${bodyClass}">${pre}
 ${header(active)}
 
   <main id="main">
@@ -301,22 +317,31 @@ const quickContacts = () => `
             <li>${ICON.pin}<div>${tag("span", "contact.address", 'class="k"')}<span class="v">${ADDRESS}</span></div></li>
           </ul>`;
 
-/* Matrimoni: ogni foto appartiene al proprio matrimonio; la prima è la copertina */
+/* Matrimoni: ogni foto appartiene al proprio matrimonio; la prima è la copertina.
+   L'ordine dell'elenco è quello di visualizzazione (e dei numeri romani); n resta fisso perché è nell'URL. */
 const PROJECTS = [
-  { n: 1, roman: "I",   key: "rw.salento", text: "rw.salento.text", pos: "center 62%", photos: [121, 64, 62, 63, 61, 65, 68, 87, 67, 72, 76, 86, 66, 69, 88, 70, 93, 95, 84, 71, 89, 73, 96, 92, 74, 75, 94, 77, 80, 99, 78, 79, 91, 81, 90, 85, 117, 109, 128, 105, 119, 114, 122, 110, 98, 97, 101, 106, 107, 115, 102, 103, 108, 104, 113, 124, 100, 111, 82, 112, 116, 123, 118] },
-  { n: 2, roman: "II",  key: "rw.w1", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
-  { n: 3, roman: "III", key: "rw.w2", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
-  { n: 4, roman: "IV",  key: "rw.w3", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
-  { n: 5, roman: "V",   key: "rw.w4", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
-  { n: 6, roman: "VI",  key: "rw.w5", pos: "center 45%", photos: [58, 59, 57, 60] },
+  { n: 1, key: "rw.salento", text: "rw.salento.text", pos: "center 62%", photos: [121, 64, 62, 63, 61, 65, 68, 87, 67, 72, 76, 86, 66, 69, 88, 70, 93, 95, 84, 71, 89, 73, 96, 92, 74, 75, 94, 77, 80, 99, 78, 79, 91, 81, 90, 85, 117, 109, 128, 105, 119, 114, 122, 110, 98, 97, 101, 106, 107, 115, 102, 103, 108, 104, 113, 124, 100, 111, 82, 112, 116, 123, 118] },
+  { n: 7, key: "rw.masseria", text: "rw.masseria.text", pos: "center 55%", photos: [151, 150, 131, 134, 138, 132, 136, 135, 137, 133, 139, 130, 143, 129, 140, 142, 152, 141, 153, 144, 145, 148, 146, 149, 147, 154] },
+  { n: 8, key: "rw.church", text: "rw.church.text", pos: "center 40%", photos: [155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 174, 166, 167, 168, 169, 170, 171, 172, 173, 165, 175, 176, 177] },
+  { n: 2, key: "rw.w1", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
+  { n: 3, key: "rw.w2", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
+  { n: 4, key: "rw.w3", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
+  { n: 5, key: "rw.w4", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
+  { n: 6, key: "rw.w5", pos: "center 45%", photos: [58, 59, 57, 60] },
 ];
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+PROJECTS.forEach((p, i) => (p.roman = ROMAN[i]));
+const MARY = 178; // ritratto di Mary Longo
 const ALT = "Real Wedding — Mary Longo Wedding Planner";
 
-/* Griglia portfolio: 5 copertine, la prima grande — nessuna casella vuota */
+/* Griglia portfolio (3 colonne, la prima copertina occupa 2x2): l'ultima si allarga
+   quanto serve per chiudere la riga — nessuna casella vuota */
+const pfFill = (3 - ((4 + PROJECTS.length - 1) % 3)) % 3;
+const pfCls = (i) => (i === 0 ? " pf__item--big" : i === PROJECTS.length - 1 && pfFill ? ` pf__item--x${pfFill + 1}` : "");
 const portfolioGrid = () => `
         <div class="pf">
           ${PROJECTS.map((p, i) => `
-          <a class="pf__item${i === 0 ? " pf__item--big" : ""} reveal d${(i % 3) + 1}" href="/real-wedding-${p.n}">
+          <a class="pf__item${pfCls(i)} reveal d${(i % 3) + 1}" href="/real-wedding-${p.n}">
             <img src="${i === 0 ? ph(p.photos[0]) : sm(p.photos[0])}" alt="${ALT} — ${t(p.key)}" loading="lazy" decoding="async" style="object-position:${p.pos}">
             <span class="pf__cap">
               <span class="pf__k">Real Wedding · ${p.roman}</span>
@@ -337,7 +362,8 @@ pages["index.html"] = layout({
   page: "home",
   active: "home",
   bodyClass: "is-home",
-  head: `
+  pre: intro(),
+  head: `${INTRO_HEAD}
   <link rel="canonical" href="https://www.marylongoweddingplanner.it/">
   <link rel="preload" as="image" href="${hd(3)}" fetchpriority="high">
   <script type="application/ld+json">
@@ -411,7 +437,7 @@ pages["index.html"] = layout({
     <section class="sec">
       <div class="wrap split">
         <div class="split__media reveal">
-          <img src="${ph(47)}" alt="Mary Longo Wedding Planner — Lecce" loading="lazy">
+          <img src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
           <img class="split__inset" src="${ph(15)}" alt="" loading="lazy">
         </div>
         <div class="split__text reveal d1">
@@ -508,7 +534,7 @@ pages["chi-sono.html"] = layout({
     <section class="sec">
       <div class="wrap split">
         <div class="split__media reveal">
-          <img src="${ph(15)}" alt="Mary Longo, wedding planner a Lecce — allestimento floreale" loading="lazy">
+          <img src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
           <span class="stamp">Mary Longo · Lecce</span>
         </div>
         <div class="split__text reveal d1">

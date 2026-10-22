@@ -6,6 +6,26 @@
   var root = document.documentElement;
   root.classList.add("js");
 
+  /* ---------- Intro home: una volta per sessione, clic o tasto per saltarla ---------- */
+  var intro = $("[data-intro]");
+  if (intro && root.classList.contains("intro-on")) {
+    try { sessionStorage.setItem("ml-intro", "1"); } catch (e) {}
+    document.body.style.overflow = "hidden";
+    var skipIntro = function () { intro.classList.add("is-skip"); };
+    var endIntro = function () {
+      root.classList.remove("intro-on");
+      document.body.style.overflow = "";
+      intro.parentNode.removeChild(intro);
+      document.removeEventListener("keydown", onIntroKey);
+    };
+    var onIntroKey = function (e) { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { e.preventDefault(); skipIntro(); } };
+    intro.addEventListener("click", skipIntro);
+    intro.addEventListener("animationend", function (e) { if (e.target === intro) endIntro(); });
+    document.addEventListener("keydown", onIntroKey);
+  } else if (intro) {
+    intro.parentNode.removeChild(intro);
+  }
+
   /* ---------- Lingua: inglese di default, scelta salvata nel browser ---------- */
   var STORE = "ml-lang";
   var dict = window.I18N ? window.I18N.dict : { en: {} };

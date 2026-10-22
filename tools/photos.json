@@ -1115,5 +1115,455 @@
   "h": 1381,
   "dups": [],
   "hd": true
+ },
+ {
+  "id": 129,
+  "file": "masseria-wedding-01",
+  "source": "_orig/masseria/masseria-wedding-01.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 130,
+  "file": "masseria-wedding-02",
+  "source": "_orig/masseria/masseria-wedding-02.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 131,
+  "file": "masseria-wedding-03",
+  "source": "_orig/masseria/masseria-wedding-03.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 132,
+  "file": "masseria-wedding-04",
+  "source": "_orig/masseria/masseria-wedding-04.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 133,
+  "file": "masseria-wedding-05",
+  "source": "_orig/masseria/masseria-wedding-05.jpg",
+  "w": 1366,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 134,
+  "file": "masseria-wedding-06",
+  "source": "_orig/masseria/masseria-wedding-06.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 135,
+  "file": "masseria-wedding-07",
+  "source": "_orig/masseria/masseria-wedding-07.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 136,
+  "file": "masseria-wedding-08",
+  "source": "_orig/masseria/masseria-wedding-08.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 137,
+  "file": "masseria-wedding-09",
+  "source": "_orig/masseria/masseria-wedding-09.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 138,
+  "file": "masseria-wedding-10",
+  "source": "_orig/masseria/masseria-wedding-10.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 139,
+  "file": "masseria-wedding-11",
+  "source": "_orig/masseria/masseria-wedding-11.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 140,
+  "file": "masseria-wedding-12",
+  "source": "_orig/masseria/masseria-wedding-12.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 141,
+  "file": "masseria-wedding-13",
+  "source": "_orig/masseria/masseria-wedding-13.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 142,
+  "file": "masseria-wedding-14",
+  "source": "_orig/masseria/masseria-wedding-14.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 143,
+  "file": "masseria-wedding-15",
+  "source": "_orig/masseria/masseria-wedding-15.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 144,
+  "file": "masseria-wedding-16",
+  "source": "_orig/masseria/masseria-wedding-16.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 145,
+  "file": "masseria-wedding-17",
+  "source": "_orig/masseria/masseria-wedding-17.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 146,
+  "file": "masseria-wedding-18",
+  "source": "_orig/masseria/masseria-wedding-18.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 147,
+  "file": "masseria-wedding-19",
+  "source": "_orig/masseria/masseria-wedding-19.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 148,
+  "file": "masseria-wedding-20",
+  "source": "_orig/masseria/masseria-wedding-20.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 149,
+  "file": "masseria-wedding-21",
+  "source": "_orig/masseria/masseria-wedding-21.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 150,
+  "file": "masseria-wedding-22",
+  "source": "_orig/masseria/masseria-wedding-22.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 151,
+  "file": "masseria-wedding-23",
+  "source": "_orig/masseria/masseria-wedding-23.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 152,
+  "file": "masseria-wedding-24",
+  "source": "_orig/masseria/masseria-wedding-24.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 153,
+  "file": "masseria-wedding-25",
+  "source": "_orig/masseria/masseria-wedding-25.jpg",
+  "w": 1365,
+  "h": 2048,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 154,
+  "file": "masseria-wedding-26",
+  "source": "_orig/masseria/masseria-wedding-26.jpg",
+  "w": 2048,
+  "h": 1365,
+  "dups": [],
+  "hd": false
+ },
+ {
+  "id": 155,
+  "file": "church-wedding-01",
+  "source": "_orig/chiesa/church-wedding-01.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 156,
+  "file": "church-wedding-02",
+  "source": "_orig/chiesa/church-wedding-02.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 157,
+  "file": "church-wedding-03",
+  "source": "_orig/chiesa/church-wedding-03.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 158,
+  "file": "church-wedding-04",
+  "source": "_orig/chiesa/church-wedding-04.jpg",
+  "w": 1067,
+  "h": 1600,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 159,
+  "file": "church-wedding-05",
+  "source": "_orig/chiesa/church-wedding-05.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 160,
+  "file": "church-wedding-06",
+  "source": "_orig/chiesa/church-wedding-06.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 161,
+  "file": "church-wedding-07",
+  "source": "_orig/chiesa/church-wedding-07.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 162,
+  "file": "church-wedding-08",
+  "source": "_orig/chiesa/church-wedding-08.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 163,
+  "file": "church-wedding-09",
+  "source": "_orig/chiesa/church-wedding-09.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 164,
+  "file": "church-wedding-10",
+  "source": "_orig/chiesa/church-wedding-10.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 165,
+  "file": "church-wedding-11",
+  "source": "_orig/chiesa/church-wedding-11.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 166,
+  "file": "church-wedding-12",
+  "source": "_orig/chiesa/church-wedding-12.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 167,
+  "file": "church-wedding-13",
+  "source": "_orig/chiesa/church-wedding-13.jpg",
+  "w": 1067,
+  "h": 1600,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 168,
+  "file": "church-wedding-14",
+  "source": "_orig/chiesa/church-wedding-14.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 169,
+  "file": "church-wedding-15",
+  "source": "_orig/chiesa/church-wedding-15.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 170,
+  "file": "church-wedding-16",
+  "source": "_orig/chiesa/church-wedding-16.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 171,
+  "file": "church-wedding-17",
+  "source": "_orig/chiesa/church-wedding-17.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 172,
+  "file": "church-wedding-18",
+  "source": "_orig/chiesa/church-wedding-18.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 173,
+  "file": "church-wedding-19",
+  "source": "_orig/chiesa/church-wedding-19.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 174,
+  "file": "church-wedding-20",
+  "source": "_orig/chiesa/church-wedding-20.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 175,
+  "file": "church-wedding-21",
+  "source": "_orig/chiesa/church-wedding-21.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 176,
+  "file": "church-wedding-22",
+  "source": "_orig/chiesa/church-wedding-22.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 177,
+  "file": "church-wedding-23",
+  "source": "_orig/chiesa/church-wedding-23.jpg",
+  "w": 1600,
+  "h": 1067,
+  "dups": [],
+  "hd": true
+ },
+ {
+  "id": 178,
+  "file": "mary-longo-ritratto",
+  "source": "_orig/mary/mary-longo-ritratto.jpg",
+  "w": 1000,
+  "h": 1500,
+  "dups": [],
+  "hd": true
  }
 ]

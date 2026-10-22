@@ -18,6 +18,14 @@ const SM = 900, MAX = 2048, UPSCALE_BELOW = 1800;
   const keep = new Set();
   for (const p of photos) {
     const src = path.join(ROOT, p.source);
+    const outs = [`${p.file}-sm.webp`, `${p.file}.webp`, `${p.file}@2x.webp`];
+    // originale non presente su questo PC (_orig non è nel repo): si tengono i WebP già generati
+    if (!fs.existsSync(src)) {
+      if (!fs.existsSync(path.join(OUT, `${p.file}.webp`))) throw new Error("Originale mancante: " + p.source);
+      outs.forEach((f) => keep.add(f));
+      process.stdout.write("=");
+      continue;
+    }
     const meta = await sharp(src).rotate().metadata();
     const rot = meta.orientation >= 5;
     const w = rot ? meta.height : meta.width, h = rot ? meta.width : meta.height;
@@ -37,7 +45,7 @@ const SM = 900, MAX = 2048, UPSCALE_BELOW = 1800;
       await base().resize(w * 2, h * 2, { kernel: "lanczos3" })
         .sharpen({ sigma: 1.1, m1: 0.7, m2: 2.2 }).webp({ quality: 74, effort: 5 }).toFile(path.join(OUT, `${p.file}@2x.webp`));
     }
-    [`${p.file}-sm.webp`, `${p.file}.webp`, `${p.file}@2x.webp`].forEach((f) => keep.add(f));
+    outs.forEach((f) => keep.add(f));
     process.stdout.write(".");
   }
   // rimuove i file non più usati (es. vecchi .jpg)
