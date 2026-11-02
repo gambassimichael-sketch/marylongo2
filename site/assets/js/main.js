@@ -6,65 +6,72 @@
   var root = document.documentElement;
   root.classList.add("js");
 
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Hero: le animazioni partono a fine intro (o subito, se l'intro non c'è) ---------- */
+  var heroGo = function () { if (!root.classList.contains("hero-go")) root.classList.add("hero-go"); };
+  var hero = $(".hero");
+  if (hero && !reduced && window.matchMedia("(hover: hover)").matches) {
+    var pt = false;
+    hero.addEventListener("mousemove", function (e) {
+      if (pt) return;
+      pt = true;
+      requestAnimationFrame(function () {
+        var r = hero.getBoundingClientRect();
+        hero.style.setProperty("--px", ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+        hero.style.setProperty("--py", ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+        pt = false;
+      });
+    });
+    hero.addEventListener("mouseleave", function () { hero.style.setProperty("--px", 0); hero.style.setProperty("--py", 0); });
+  }
+
   /* ---------- Intro home: una volta per sessione, clic o tasto per saltarla ---------- */
   var intro = $("[data-intro]");
   if (intro && root.classList.contains("intro-on")) {
     try { sessionStorage.setItem("ml-intro", "1"); } catch (e) {}
     document.body.style.overflow = "hidden";
-    var skipIntro = function () { intro.classList.add("is-skip"); };
+    // la hero si anima mentre i due pannelli dell'intro si aprono (3,25 s, o subito se si salta)
+    var heroTimer = setTimeout(heroGo, 3150);
+    var skipIntro = function () { intro.classList.add("is-skip"); clearTimeout(heroTimer); setTimeout(heroGo, 120); };
     var endIntro = function () {
       root.classList.remove("intro-on");
       document.body.style.overflow = "";
       intro.parentNode.removeChild(intro);
       document.removeEventListener("keydown", onIntroKey);
+      heroGo();
     };
     var onIntroKey = function (e) { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { e.preventDefault(); skipIntro(); } };
     intro.addEventListener("click", skipIntro);
     intro.addEventListener("animationend", function (e) { if (e.target === intro) endIntro(); });
     document.addEventListener("keydown", onIntroKey);
-  } else if (intro) {
-    intro.parentNode.removeChild(intro);
+  } else {
+    if (intro) intro.parentNode.removeChild(intro);
+    setTimeout(heroGo, 60);
   }
 
-  /* ---------- Lingua: inglese di default, scelta salvata nel browser ---------- */
-  var STORE = "ml-lang";
-  var dict = window.I18N ? window.I18N.dict : { en: {} };
-  var current = "en";
-
-  function storedLang() {
-    var q = new URLSearchParams(location.search).get("lang");
-    if (q && dict[q]) return q;
-    try { var l = localStorage.getItem(STORE); if (l && dict[l]) return l; } catch (e) {}
-    return "en";
+  /* ---------- Contatori (25 anni, 10 anni, 3 lingue): contano quando entrano nello schermo ---------- */
+  var counters = $$("[data-count]");
+  var countUp = function (el) {
+    var end = parseFloat(el.getAttribute("data-count")), t0 = null, dur = 1600;
+    var step = function (ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    el.textContent = "0";
+    requestAnimationFrame(step);
+  };
+  if (counters.length && "IntersectionObserver" in window) {
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { countUp(en.target); cio.unobserve(en.target); } });
+    }, { threshold: 0.6 });
+    counters.forEach(function (el) { cio.observe(el); });
   }
 
-  function applyLang(lang, save) {
-    var d = dict[lang] || dict.en;
-    current = lang;
-    root.lang = lang;
-    $$("[data-i18n]").forEach(function (el) {
-      var v = d[el.getAttribute("data-i18n")];
-      if (v != null) el.innerHTML = v;
-    });
-    $$("[data-i18n-attr]").forEach(function (el) {
-      el.getAttribute("data-i18n-attr").split(";").forEach(function (pair) {
-        var p = pair.split(":");
-        var v = d[p[1]];
-        if (v != null) el.setAttribute(p[0], v);
-      });
-    });
-    $$(".lang__cur").forEach(function (el) { el.textContent = lang.toUpperCase(); });
-    $$("[data-set-lang]").forEach(function (b) {
-      var on = b.getAttribute("data-set-lang") === lang;
-      b.classList.toggle("is-active", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-    $$('input[name="lingua"]').forEach(function (i) { i.value = lang; });
-    if (save) { try { localStorage.setItem(STORE, lang); } catch (e) {} }
-    root.classList.remove("i18n-wait");
-  }
-
-  applyLang(storedLang(), false);
+  /* ---------- Lingua: ogni lingua ha le sue pagine (/, /en/, /fr/, /es/); qui solo il menu a tendina ---------- */
+  var MSG = window.ML_MSG || {};
 
   $$(".lang").forEach(function (box) {
     var btn = $(".lang__btn", box);
@@ -77,9 +84,6 @@
   });
   document.addEventListener("click", function () {
     $$(".lang.is-open").forEach(function (b) { b.classList.remove("is-open"); $(".lang__btn", b).setAttribute("aria-expanded", "false"); });
-  });
-  $$("[data-set-lang]").forEach(function (b) {
-    b.addEventListener("click", function () { applyLang(b.getAttribute("data-set-lang"), true); });
   });
 
   /* ---------- Consenso cookie (GDPR): la scelta vale 6 mesi, poi viene richiesta di nuovo ---------- */
@@ -198,9 +202,13 @@
   var reveals = $$(".reveal");
   var revealTick = false;
   function checkReveals() {
-    var limit = window.innerHeight * 0.94;
+    var limit = window.innerHeight * 0.94, k = 0;
     reveals = reveals.filter(function (el) {
-      if (el.getBoundingClientRect().top < limit) { el.classList.add("is-in"); return false; }
+      if (el.getBoundingClientRect().top < limit) {
+        if (/gal__item|lt__ph|gcard|rev\b/.test(el.className) && !/\bd[123]\b/.test(el.className)) el.style.transitionDelay = Math.min(k++, 10) * 70 + "ms";
+        el.classList.add("is-in");
+        return false;
+      }
       return true;
     });
     revealTick = false;
@@ -295,12 +303,13 @@
   var lb = $(".lb");
   var pics = $$("img[data-lb]");
   if (lb && pics.length) {
-    var lbImg = $("img", lb), lbCount = $(".lb__count", lb), cur = 0;
+    var lbImg = $("img", lb), lbCount = $(".lb__count", lb), lbCap = $(".lb__cap", lb), cur = 0;
     var show = function (i) {
       cur = (i + pics.length) % pics.length;
       lbImg.src = pics[cur].getAttribute("data-full") || pics[cur].src;
       lbImg.alt = pics[cur].alt;
       lbCount.textContent = (cur + 1) + " / " + pics.length;
+      if (lbCap) { lbCap.textContent = pics[cur].getAttribute("data-cap") || ""; lb.classList.toggle("has-cap", !!lbCap.textContent); }
     };
     var open = function (i) { show(i); lb.classList.add("is-open"); lb.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; };
     var close = function () { lb.classList.remove("is-open"); lb.setAttribute("aria-hidden", "true"); document.body.style.overflow = ""; };
@@ -330,7 +339,7 @@
   $$("form.form").forEach(function (f) {
     f.addEventListener("submit", function (e) {
       e.preventDefault();
-      var d = dict[current] || dict.en;
+      var d = MSG;
       var st = $(".form__status", f);
       var ok = true;
       $$("[required]", f).forEach(function (el) {
@@ -351,7 +360,7 @@
         if (!r.ok) throw new Error(r.status);
         st.textContent = d["form.ok"];
         f.reset();
-        $$('input[name="lingua"]', f).forEach(function (i) { i.value = current; });
+        $$('input[name="lingua"]', f).forEach(function (i) { i.value = root.lang; });
       }).catch(function () {
         st.textContent = d["form.fail"];
         st.classList.add("is-err");

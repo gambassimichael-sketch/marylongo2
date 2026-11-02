@@ -1,5 +1,6 @@
 /* Genera le pagine HTML del sito in ./site partendo dalle traduzioni in site/assets/js/i18n.js.
-   Uso: node build.js  — l'HTML esce in inglese (lingua di default), il cambio lingua avviene in pagina. */
+   Uso: node build.js — una pagina vera per lingua: italiano alla radice (stessi URL del vecchio sito),
+   inglese, francese e spagnolo in /en/, /fr/, /es/, collegate con hreflang. */
 const fs = require("fs");
 const path = require("path");
 const I18N = require("./site/assets/js/i18n.js");
@@ -10,11 +11,21 @@ const LEGAL = require("./site/assets/js/i18n-legal.js");
 for (const k in LEGAL) I18N.langs.forEach((l, i) => (I18N.dict[l][k] = LEGAL[k][i]));
 const YEAR = new Date().getFullYear();
 
+const SITE = "https://www.marylongoweddingplanner.it";
+const LANGS = ["it", "en", "fr", "es"];
+const LOCALE = { it: "it_IT", en: "en_GB", fr: "fr_FR", es: "es_ES" };
+let L = "it"; // lingua della pagina in costruzione
+
 /* ---------- helpers ---------- */
 function t(k) {
   if (!(k in EN)) throw new Error("Chiave di traduzione mancante: " + k);
-  return EN[k];
+  const v = I18N.dict[L][k];
+  return v == null || v === "" ? EN[k] : v;
 }
+/* percorsi: "/chi-sono" → "/chi-sono" (it), "/en/chi-sono" (en)…; la home inglese è "/en/" */
+const pre = (l = L) => (l === "it" ? "" : "/" + l);
+const urlFor = (p, l = L) => pre(l) + p;
+const alts = (p) => Object.fromEntries(LANGS.map((l) => [l, urlFor(p, l)]));
 const tag = (name, key, attrs = "") => `<${name} data-i18n="${key}"${attrs ? " " + attrs : ""}>${t(key)}</${name}>`;
 const img = (f) => `/assets/img/${f}`;
 /* CSS e JS con ?v=<hash del contenuto>: Netlify li fa tenere in cache 7 giorni (netlify.toml),
@@ -65,6 +76,7 @@ const NAV = [
   { href: "/wedding", key: "wedding", id: "wedding" },
   { href: "/eventi", key: "events", id: "events" },
   { href: "/real-wedding", key: "portfolio", id: "rw" },
+  { href: "/guide", key: "guide", id: "guide" },
   { href: "/faq", key: "faq", id: "faq" },
   { href: "/contatti", key: "contact", id: "contact" },
 ];
@@ -72,14 +84,17 @@ const NAV = [
 const navItem = (n, active) =>
   `<a class="nav__a${n.id === active ? " is-active" : ""}" href="${n.href}">${tag("span", "nav." + n.key)}${tag("small", "nav." + n.key + ".sub")}</a>`;
 
+/* Cambio lingua: link alla stessa pagina nelle altre lingue (ALT è impostato da layout).
+   "@/" evita che il prefisso di lingua venga aggiunto di nuovo in prefixLinks(). */
+const LANG_NAME = { it: "Italiano", en: "English", fr: "Français", es: "Español" };
+let LANG_ALT = {};
+const langLink = (l, inner, cls = "") =>
+  `<a href="@${LANG_ALT[l]}" hreflang="${l}" lang="${l}"${l === L ? ` class="is-active${cls}" aria-current="page"` : cls ? ` class="${cls.trim()}"` : ""}>${inner}</a>`;
 const langSwitch = (extra = "") => `
       <div class="lang ${extra}" data-lang>
-        <button class="lang__btn" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-attr="aria-label:ui.language" aria-label="${t("ui.language")}">${ICON.globe}<span class="lang__cur">EN</span>${ICON.chev}</button>
+        <button class="lang__btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="${t("ui.language")}">${ICON.globe}<span class="lang__cur">${L.toUpperCase()}</span>${ICON.chev}</button>
         <ul class="lang__menu">
-          <li><button type="button" data-set-lang="en" lang="en"><b>EN</b>English</button></li>
-          <li><button type="button" data-set-lang="it" lang="it"><b>IT</b>Italiano</button></li>
-          <li><button type="button" data-set-lang="fr" lang="fr"><b>FR</b>Français</button></li>
-          <li><button type="button" data-set-lang="es" lang="es"><b>ES</b>Español</button></li>
+          ${LANGS.map((l) => `<li>${langLink(l, `<b>${l.toUpperCase()}</b>${LANG_NAME[l]}`)}</li>`).join("\n          ")}
         </ul>
       </div>`;
 
@@ -110,10 +125,7 @@ function header(active) {
       ${NAV.map((n) => navItem(n, active)).join("\n      ")}
     </nav>
     <div class="mnav__langs">
-      <button type="button" data-set-lang="en">English</button>
-      <button type="button" data-set-lang="it">Italiano</button>
-      <button type="button" data-set-lang="fr">Français</button>
-      <button type="button" data-set-lang="es">Español</button>
+      ${LANGS.map((l) => langLink(l, LANG_NAME[l])).join("\n      ")}
     </div>
     <div class="mnav__meta"><a href="${TEL}">${PHONE}</a><a href="mailto:${MAIL}">${MAIL}</a></div>
   </div>`;
@@ -187,49 +199,68 @@ function cookieBanner() {
   </div>`;
 }
 
-/* Intro della home: logo, filo rosa che si disegna, frase e petali; poi si solleva come un velo.
+/* Intro della home: il logo si apre, occhiello tra due filetti, barra di avanzamento; poi due pannelli si aprono.
    Compare una volta per sessione (classe intro-on messa dallo script in <head>), clic per saltarla. */
-const PETALS = [[6, 0, 6.5, 0.9], [17, 0.9, 7.5, 0.6], [29, 0.3, 6, 1], [41, 1.4, 8, 0.7], [53, 0.6, 7, 0.85], [64, 0.1, 6.8, 0.65], [75, 1.1, 7.2, 1], [86, 0.4, 6.4, 0.75], [94, 1.6, 7.8, 0.6]];
 const INTRO_HEAD = `
-  <script>try{if(!sessionStorage.getItem("ml-intro")&&!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.className+=" intro-on"}catch(e){}</script>`;
+  <script>try{if(!sessionStorage.getItem("ml-intro"))document.documentElement.className+=" intro-on"}catch(e){}</script>`;
 const intro = () => `
   <div class="intro" data-intro hidden>
-    <div class="intro__petals" aria-hidden="true">${PETALS.map(([x, d, s, z]) => `<i style="--x:${x}%;--d:${d}s;--s:${s}s;--z:${z}"></i>`).join("")}</div>
+    <div class="intro__panel intro__panel--top" aria-hidden="true"></div>
+    <div class="intro__panel intro__panel--bot" aria-hidden="true"></div>
     <div class="intro__in">
       <img class="intro__logo" src="${img("logo-maria-longo@2x.jpg")}" alt="Mary Longo Wedding Planner" width="562" height="340">
-      <span class="intro__line" aria-hidden="true"></span>
-      ${tag("p", "intro.line", 'class="intro__txt"')}
+      <p class="intro__tag"><span class="intro__rule" aria-hidden="true"></span><span>${t("intro.tag")}</span><span class="intro__rule" aria-hidden="true"></span></p>
     </div>
-    <button class="intro__skip" type="button" data-i18n="ui.skip">${t("ui.skip")}</button>
+    <span class="intro__bar" aria-hidden="true"><i></i></span>
+    <button class="intro__skip" type="button">${t("ui.skip")}</button>
   </div>`;
 
-function layout({ page, active, bodyClass = "", head = "", pre = "", body, scripts = "" }) {
+/* attributi HTML: escape minimo per i testi messi dentro content="" */
+const faqText = (s) => String(s).replace(/<[^>]+>/g, "");
+const attr = (s) => String(s).replace(/<[^>]+>/g, "").replace(/&(?!\w+;)/g, "&amp;").replace(/"/g, "&quot;");
+const ldScript = (o) => `\n  <script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
+
+/* slug: percorso italiano della pagina (stesso nelle altre lingue) oppure alt: { it, en, fr, es } già completi.
+   title/desc: testi già tradotti (altrimenti chiavi <page>.metaTitle / <page>.metaDesc). ld: oggetti JSON-LD */
+function layout({ page, slug, alt, title, desc, image, active, bodyClass = "", head = "", pre = "", body, ld = [] }) {
+  LANG_ALT = alt || alts(slug);
+  const T = title || t(page + ".metaTitle");
+  const DSC = desc || t(page + ".metaDesc");
+  const canon = SITE + LANG_ALT[L];
+  const ogImg = SITE + (image || hd(42));
+  const MSG = Object.fromEntries(["form.err", "form.sending", "form.ok", "form.fail"].map((k) => [k, t(k)]));
   return `<!doctype html>
-<html lang="en">
+<html lang="${L}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title data-i18n="${page}.metaTitle">${t(page + ".metaTitle")}</title>
-  <meta name="description" data-i18n-attr="content:${page}.metaDesc" content="${t(page + ".metaDesc")}">
+  <title>${attr(T)}</title>
+  <meta name="description" content="${attr(DSC)}">
   <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="${canon}">
+${LANGS.map((l) => `  <link rel="alternate" hreflang="${l}" href="${SITE + LANG_ALT[l]}">`).join("\n")}
+  <link rel="alternate" hreflang="x-default" href="${SITE + LANG_ALT.en}">
   <meta name="author" content="Mary Longo">
   <meta name="geo.region" content="IT-75">
   <meta name="geo.placename" content="Lecce, Puglia, Italia">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Mary Longo Wedding Planner">
-  <meta property="og:title" content="${t(page + ".metaTitle")}">
-  <meta property="og:description" content="${t(page + ".metaDesc")}">
-  <meta property="og:image" content="${hd(42)}">
+  <meta property="og:locale" content="${LOCALE[L]}">
+${LANGS.filter((l) => l !== L).map((l) => `  <meta property="og:locale:alternate" content="${LOCALE[l]}">`).join("\n")}
+  <meta property="og:url" content="${canon}">
+  <meta property="og:title" content="${attr(T)}">
+  <meta property="og:description" content="${attr(DSC)}">
+  <meta property="og:image" content="${ogImg}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" type="image/png" sizes="32x32" href="${img("msn-150x150.png")}">
   <link rel="icon" type="image/png" sizes="192x192" href="${img("msn-300x300.png")}">
   <link rel="apple-touch-icon" href="${img("msn-300x300.png")}">
-  <script>try{var l=localStorage.getItem("ml-lang");if(l&&l!=="en")document.documentElement.className+=" i18n-wait"}catch(e){}</script>
   <link rel="preload" href="/assets/fonts/jost-300-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/assets/fonts/cormorant-upright-300-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="${asset("css/fonts.css")}">
-  <link rel="stylesheet" href="${asset("css/style.css")}">${head}
+  <link rel="stylesheet" href="${asset("css/style.css")}">${head}${ld.map(ldScript).join("")}
+  <script>window.ML_MSG=${JSON.stringify(MSG)}</script>
 </head>
 <body class="${bodyClass}">${pre}
 ${header(active)}
@@ -245,11 +276,11 @@ ${footer()}
     <img alt="">
     <button class="lb__nav lb__next" type="button" data-i18n-attr="aria-label:ui.next" aria-label="${t("ui.next")}">${ICON.arrow}</button>
     <span class="lb__count"></span>
+    <p class="lb__cap" aria-live="polite"></p>
   </div>
 
 ${cookieBanner()}
 
-  <script src="${asset("js/i18n.js")}"></script>${scripts}
   <script src="${asset("js/main.js")}"></script>
 </body>
 </html>
@@ -295,7 +326,7 @@ function contactForm() {
   return `
         <form class="form" name="contatti" method="POST" action="/contatti" data-netlify="true" netlify-honeypot="bot-field" novalidate>
           <input type="hidden" name="form-name" value="contatti">
-          <input type="hidden" name="lingua" value="en">
+          <input type="hidden" name="lingua" value="${L}">
           <p class="hp"><label>Bot <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
           <div class="form__row">
             <div class="f"><input id="f-nome" name="nome" type="text" autocomplete="name" placeholder=" " required><label for="f-nome"><span data-i18n="form.name">${t("form.name")}</span> *</label></div>
@@ -323,18 +354,21 @@ const quickContacts = () => `
 /* Matrimoni: ogni foto appartiene al proprio matrimonio; la prima è la copertina.
    L'ordine dell'elenco è quello di visualizzazione (e dei numeri romani); n resta fisso perché è nell'URL. */
 const PROJECTS = [
+  { n: 7, isNew: true, strip: [142, 141, 148, 154], key: "rw.masseria", text: "rw.masseria.text", pos: "center 55%", photos: [151, 150, 131, 134, 138, 132, 136, 135, 137, 133, 139, 130, 143, 129, 140, 142, 152, 141, 153, 144, 145, 148, 146, 149, 147, 154] },
+  { n: 8, isNew: true, strip: [159, 162, 169, 167], key: "rw.church", text: "rw.church.text", pos: "center 40%", photos: [155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 174, 166, 167, 168, 169, 170, 171, 172, 173, 165, 175, 176, 177] },
   { n: 1, key: "rw.salento", text: "rw.salento.text", pos: "center 62%", photos: [121, 64, 62, 63, 61, 65, 68, 87, 67, 72, 76, 86, 66, 69, 88, 70, 93, 95, 84, 71, 89, 73, 96, 92, 74, 75, 94, 77, 80, 99, 78, 79, 91, 81, 90, 85, 117, 109, 128, 105, 119, 114, 122, 110, 98, 97, 101, 106, 107, 115, 102, 103, 108, 104, 113, 124, 100, 111, 82, 112, 116, 123, 118] },
-  { n: 7, key: "rw.masseria", text: "rw.masseria.text", pos: "center 55%", photos: [151, 150, 131, 134, 138, 132, 136, 135, 137, 133, 139, 130, 143, 129, 140, 142, 152, 141, 153, 144, 145, 148, 146, 149, 147, 154] },
-  { n: 8, key: "rw.church", text: "rw.church.text", pos: "center 40%", photos: [155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 174, 166, 167, 168, 169, 170, 171, 172, 173, 165, 175, 176, 177] },
-  { n: 2, key: "rw.w1", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
-  { n: 3, key: "rw.w2", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
-  { n: 4, key: "rw.w3", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
-  { n: 5, key: "rw.w4", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
-  { n: 6, key: "rw.w5", pos: "center 45%", photos: [58, 59, 57, 60] },
+  { n: 2, key: "rw.w1", text: "rw.w1.text", pos: "center 40%", photos: [17, 18, 20, 16, 22, 25, 28, 14, 31, 24, 27, 15, 8, 13] },
+  { n: 3, key: "rw.w2", text: "rw.w2.text", pos: "center 60%", photos: [6, 36, 40, 42, 26, 10, 30, 29, 37, 32, 2, 35, 21, 23, 19, 33, 12, 5, 9, 11, 34, 7] },
+  { n: 4, key: "rw.w3", text: "rw.w3.text", pos: "center 35%", photos: [38, 43, 45, 41, 44, 46, 48, 47] },
+  { n: 5, key: "rw.w4", text: "rw.w4.text", pos: "center 50%", photos: [51, 53, 50, 54, 49, 55, 56, 39, 52, 4] },
+  { n: 6, key: "rw.w5", text: "rw.w5.text", pos: "center 45%", photos: [58, 59, 57, 60] },
 ];
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 PROJECTS.forEach((p, i) => (p.roman = ROMAN[i]));
 const MARY = 178; // ritratto di Mary Longo
+/* didascalie delle foto (content/captions.js): [it, en, fr, es] */
+const CAPTIONS = require("./content/captions.js");
+const cap = (id) => (CAPTIONS[id] ? CAPTIONS[id][LANGS.indexOf(L)] : "");
 const ALT = "Real Wedding — Mary Longo Wedding Planner";
 
 /* Griglia portfolio (3 colonne, la prima copertina occupa 2x2): l'ultima si allarga
@@ -347,14 +381,291 @@ const portfolioGrid = () => `
           <a class="pf__item${pfCls(i)} reveal d${(i % 3) + 1}" href="/real-wedding-${p.n}">
             <img src="${i === 0 ? ph(p.photos[0]) : sm(p.photos[0])}" alt="${ALT} — ${t(p.key)}" loading="lazy" decoding="async" style="object-position:${p.pos}">
             <span class="pf__cap">
-              <span class="pf__k">Real Wedding · ${p.roman}</span>
+              <span class="pf__k">${p.isNew ? `<em class="pf__new">${t("rw.new")}</em>` : ""}Real Wedding · ${p.roman}</span>
               ${tag("span", p.key, 'class="pf__t"')}
               <span class="pf__l"><span data-i18n="pf.discover">${t("pf.discover")}</span> · ${p.photos.length} <span data-i18n="rw.photos">${t("rw.photos")}</span></span>
             </span>
           </a>`).join("")}
         </div>`;
 
-/* ---------- pagine ---------- */
+/* ---------- Guide (content/guide.js): pagine-risposta per Google e assistenti AI ---------- */
+const GUIDE = require("./content/guide.js");
+const G = (o) => o[L] || o.en;
+const guideAlt = (g) => Object.fromEntries(LANGS.map((l) => [l, pre(l) + g.slug[l]]));
+const guideById = (id) => GUIDE.guides.find((g) => g.id === id);
+const guideBody = (g) => G(g.body).replace(/\{\{g:(\w+)\}\}/g, (m, id) => guideById(id).slug[L]);
+
+const guideCards = (list) => `
+        <div class="gcards">
+          ${list.map((g, i) => `
+          <a class="gcard reveal d${(i % 3) + 1}" href="${g.slug[L]}">
+            <span class="gcard__media"><img src="${sm(g.img)}" alt="" loading="lazy" decoding="async"><span class="gcard__no">${String(GUIDE.guides.indexOf(g) + 1).padStart(2, "0")}</span></span>
+            <span class="gcard__t"><span>${G(g.title)}</span></span>
+            <span class="gcard__d">${G(g.desc)}</span>
+            <span class="gcard__l">${G(GUIDE.hub.read)} ${ICON.arrow}</span>
+          </a>`).join("")}
+        </div>`;
+
+const guideTeaser = () => `
+    <section class="sec">
+      <div class="wrap">
+        <div class="shead reveal"><span class="orn" aria-hidden="true"></span><span class="kicker">${G(GUIDE.hub.kicker)}</span><h2 class="stitle">${G(GUIDE.hub.teaserTitle)}</h2></div>
+        ${guideCards(GUIDE.guides.slice(0, 3))}
+        <div class="center reveal" style="margin-top:22px"><a class="btn" href="/guide">${G(GUIDE.hub.teaserBtn)}</a></div>
+      </div>
+    </section>`;
+
+function guidePages() {
+  const out = {};
+  const H = GUIDE.hub;
+  out["guide.html"] = layout({
+    page: "guide",
+    slug: "/guide",
+    title: G(H.title),
+    desc: G(H.desc),
+    active: "guide",
+    ld: [
+      CRUMBS([[t("nav.guide"), "/guide"]]),
+      { "@context": "https://schema.org", "@type": "CollectionPage", name: faqText(G(H.h1)), description: G(H.desc), inLanguage: L,
+        hasPart: GUIDE.guides.map((g) => ({ "@type": "Article", headline: G(g.title), url: SITE + pre() + g.slug[L] })) },
+    ],
+    body: `
+    <section class="phero">
+      <div class="phero__bg" style="background-image:url('${hd(155)}');background-position:center 40%"></div>
+      <div class="phero__in">
+        <span class="kicker kicker--light">${G(H.kicker)}</span>
+        <h1 class="phero__title">${G(H.h1)}</h1>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="wrap">
+        <p class="lead center reveal">${G(H.lead)}</p>
+        ${guideCards(GUIDE.guides)}
+      </div>
+    </section>
+${ctaBand(24, "cta.dream", "contact.lead")}`,
+  });
+
+  for (const g of GUIDE.guides) {
+    const others = GUIDE.guides.filter((x) => x !== g);
+    const rel = (g.related || []).map((n) => PROJECTS.find((p) => p.n === n)).filter(Boolean);
+    out[g.slug[L].slice(1) + ".html"] = layout({
+      page: "guide",
+      alt: guideAlt(g),
+      title: `${G(g.title)} | Mary Longo`,
+      desc: G(g.desc),
+      image: hd(g.img),
+      active: "guide",
+      ld: [
+        CRUMBS([[t("nav.guide"), "/guide"], [G(g.title), g.slug[L]]]),
+        {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: G(g.title),
+          description: G(g.desc),
+          abstract: faqText(G(g.short)),
+          image: SITE + hd(g.img),
+          inLanguage: L,
+          datePublished: GUIDE.UPDATED,
+          dateModified: GUIDE.UPDATED,
+          author: { "@id": MARY_ID, "@type": "Person", name: "Mary Longo", url: SITE + urlFor("/chi-sono") },
+          publisher: { "@id": BIZ_ID, "@type": "Organization", name: "Mary Longo Wedding Planner", logo: SITE + img("logo-maria-longo@2x.jpg") },
+          mainEntityOfPage: SITE + pre() + g.slug[L],
+          about: ["Wedding", "Puglia", "Salento"],
+        },
+      ],
+      body: `
+    <section class="phero phero--guide">
+      <div class="phero__bg" style="background-image:url('${hd(g.img)}');background-position:center 45%"></div>
+      <div class="phero__in">
+        <a class="kicker kicker--light" href="/guide">${G(H.kicker)}</a>
+      </div>
+    </section>
+
+    <article class="sec legal guide">
+      <div class="wrap wrap--narrow">
+        <span class="orn orn--left" aria-hidden="true"></span>
+        <h1 class="h-display guide__title">${G(g.title)}</h1>
+        <p class="legal__date">${G(H.by)} · <time datetime="${GUIDE.UPDATED}">${G(H.updated)}</time></p>
+        <div class="guide__short"><span class="kicker">${G(H.short)}</span><p>${G(g.short)}</p></div>
+        <div class="legal__body guide__body">${guideBody(g)}</div>
+        ${rel.length ? `
+        <div class="guide__rel">
+          <span class="kicker">Real Wedding</span>
+          <div class="guide__relgrid">${rel.map((p) => `
+            <a href="/real-wedding-${p.n}"><img src="${sm(p.photos[0])}" alt="${attr(t(p.key))}" loading="lazy" style="object-position:${p.pos}"><span>${t(p.key)}</span></a>`).join("")}
+          </div>
+        </div>` : ""}
+        <div class="guide__cta">
+          <h2>${G(H.cta)}</h2>
+          <p>${G(H.ctaText)}</p>
+          <div class="btn-row">${btn("/contatti", "cta.book", "btn btn--dark")}<a class="btn" href="${WA}" target="_blank" rel="noopener">WhatsApp</a></div>
+        </div>
+      </div>
+    </article>
+
+    <section class="sec sec--ivory">
+      <div class="wrap">
+        <div class="shead reveal"><span class="orn" aria-hidden="true"></span><h2 class="stitle">${G(H.more)}</h2></div>
+        ${guideCards(others.slice(0, 3))}
+      </div>
+    </section>`,
+    });
+  }
+  return out;
+}
+
+/* llms.txt: riassunto per gli assistenti AI (formato https://llmstxt.org) */
+function llmsTxt() {
+  const u = (p, l = "it") => SITE + urlFor(p, l);
+  const gl = (l) => GUIDE.guides.map((g) => `- [${g.title[l]}](${SITE + pre(l) + g.slug[l]}): ${g.desc[l]}`).join("\n");
+  return `# Mary Longo Wedding Planner
+
+> Mary Longo is a wedding planner, event planner and wedding celebrant based in Lecce (Salento, Puglia, Italy). She plans weddings, destination weddings for couples from abroad and private events across Lecce, Salento and the rest of Puglia, and officiates civil and symbolic ceremonies in Italian, English and French (Spanish, Russian and German with trusted partners).
+
+Key facts:
+- Business: Mary Longo Wedding Planner (also listed as "Love is Love – Mary Longo Wedding Planner"), Via Pistoia 8, 73100 Lecce, Italy. VAT IT03623540755.
+- Experience: 25 years organising events, 10 years as a wedding planner and celebrant.
+- Languages: Italian, English, French.
+- Services: full wedding planning, partial planning, on-the-day coordination, destination weddings in Puglia, civil and symbolic ceremonies (sand, light, tie-the-knot rituals), private and corporate events.
+- Prices: wedding planning services start from about €1,200; supplier costs are separate.
+- Area: Lecce, Salento (Otranto, Gallipoli, Santa Maria di Leuca, Nardò, Galatina), Brindisi, Ostuni and all of Puglia; nearest airport Brindisi (BDS), about 40 km from Lecce.
+- Real weddings: a Los Angeles couple married in a real Salento town square (with the mayor's permission, pizzica and local food stalls); a Lithuanian couple in a masseria; church weddings in Baroque Lecce; quarry and seaside receptions.
+- Contact: +39 338 7441562 (also WhatsApp), info@marylongoweddingplanner.it, Monday–Friday 9:00–18:30, Saturday 9:00–13:30.
+
+## Main pages
+- [Home (Italian)](${u("/")}) · [English](${u("/", "en")}) · [Français](${u("/", "fr")}) · [Español](${u("/", "es")})
+- [About Mary Longo](${u("/chi-sono", "en")})
+- [Wedding services](${u("/wedding", "en")})
+- [Real weddings portfolio](${u("/real-wedding", "en")})
+- [FAQ: costs, destination weddings, ceremonies, legal requirements](${u("/faq", "en")})
+- [Contact](${u("/contatti", "en")})
+
+## Guides (English)
+${gl("en")}
+
+## Guide (italiano)
+${gl("it")}
+
+## Optional
+- [Matrimonio.com reviews](${MC})
+- [Instagram](${IG})
+- [Facebook](${FB})
+`;
+}
+
+/* Recensioni degli sposi (testi originali del vecchio sito, in italiano; tradotte nelle altre lingue) */
+const reviews = () => `
+    <section class="sec sec--ivory revs">
+      <div class="wrap">
+        ${shead("rev.kicker", "rev.title", { cls: "reveal" })}
+        <div class="revs__grid">
+          ${[1, 2, 3].map((i) => `
+          <figure class="rev reveal d${i}">
+            <span class="rev__stars" aria-label="5/5">★★★★★</span>
+            <blockquote>${t("rev." + i)}</blockquote>
+            <figcaption>${t(`rev.${i}.who`)}</figcaption>
+          </figure>`).join("")}
+        </div>
+        <p class="revs__foot reveal">${L !== "it" ? `<small>${t("rev.note")}</small> · ` : ""}<a href="${MC}/opinioni" target="_blank" rel="noopener">${t("rev.more")}</a></p>
+      </div>
+    </section>`;
+
+/* titolo della hero: ogni parola in una maschera, sale con un piccolo ritardo (--i) */
+const words = (txt) => String(txt).split(/\s+/).map((w, i) => `<span class="w"><span style="--i:${i}">${w}</span></span>`).join(" ");
+const HERO_PETALS = [[8, 0, 14, 0.8], [22, 5, 17, 0.6], [37, 2, 15, 0.9], [55, 8, 18, 0.7], [68, 3, 16, 0.85], [82, 10, 19, 0.6], [93, 6, 15, 0.75]];
+
+/* Ultimi matrimoni in evidenza in home: copertina grande, testo, quattro foto con didascalia */
+const latestWeddings = () => `
+    <section class="sec latest">
+      <div class="wrap">
+        ${shead("home.latest.kicker", "home.latest.title", { cls: "reveal" })}
+        ${tag("p", "home.latest.lead", 'class="lead center reveal"')}
+        ${PROJECTS.filter((p) => p.isNew).map((p, i) => `
+        <article class="lt${i % 2 ? " lt--rev" : ""}">
+          <a class="lt__media reveal reveal--img" href="/real-wedding-${p.n}">
+            <img src="${ph(p.photos[0])}" alt="${attr(cap(p.photos[0]) || t(p.key))}" loading="lazy" decoding="async" style="object-position:${p.pos}">
+            <span class="lt__badge">${t("rw.new")}</span>
+          </a>
+          <div class="lt__text">
+            <span class="kicker reveal">Real Wedding · ${p.roman} · ${p.photos.length} ${t("rw.photos")}</span>
+            <h3 class="lt__title reveal d1">${t(p.key)}</h3>
+            <p class="reveal d2">${t(p.text)}</p>
+            <div class="lt__strip">${(p.strip || p.photos.slice(1, 5)).map((id, j) => `
+              <a class="lt__ph reveal d${(j % 3) + 1}" href="/real-wedding-${p.n}"><img src="${sm(id)}" alt="${attr(cap(id))}" loading="lazy" decoding="async"><span>${cap(id)}</span></a>`).join("")}
+            </div>
+            <a class="btn btn--dark btn--shine reveal" href="/real-wedding-${p.n}">${t("rw.see")} ${ICON.arrow}</a>
+          </div>
+        </article>`).join("")}
+      </div>
+    </section>`;
+
+/* fascia che scorre con i luoghi del Salento */
+const MQ = ["Lecce", "Salento", "Otranto", "Gallipoli", "Santa Maria di Leuca", "Ostuni", "Porto Cesareo", "Castro", "Nardò", "Puglia"];
+const marquee = () => `
+    <div class="mq" aria-hidden="true"><div class="mq__track">${[...MQ, ...MQ].map((n) => `<span>${n}</span><i>✦</i>`).join("")}</div></div>`;
+
+/* ---------- dati strutturati (JSON-LD): stessa identità ovunque, così motori e AI la riconoscono ---------- */
+const BIZ_ID = SITE + "/#business";
+const MARY_ID = SITE + "/#mary-longo";
+const AREAS = ["Lecce", "Salento", "Otranto", "Gallipoli", "Santa Maria di Leuca", "Nardò", "Galatina", "Brindisi", "Ostuni", "Puglia"];
+const ORG = () => ({
+  "@context": "https://schema.org",
+  "@type": ["LocalBusiness", "ProfessionalService"],
+  "@id": BIZ_ID,
+  name: "Mary Longo Wedding Planner",
+  alternateName: ["Love is Love – Mary Longo Wedding Planner", "Mary Longo WP"],
+  description: t("home.metaDesc"),
+  url: SITE + urlFor("/"),
+  image: SITE + hd(3),
+  logo: SITE + img("logo-maria-longo@2x.jpg"),
+  telephone: PHONE,
+  email: MAIL,
+  vatID: "IT03623540755",
+  priceRange: "€€",
+  address: { "@type": "PostalAddress", streetAddress: "Via Pistoia 8", addressLocality: "Lecce", postalCode: "73100", addressRegion: "Puglia", addressCountry: "IT" },
+  geo: { "@type": "GeoCoordinates", latitude: 40.3529, longitude: 18.1743 },
+  areaServed: [...AREAS.map((n) => ({ "@type": "Place", name: n })), { "@type": "Country", name: "Italia" }],
+  knowsLanguage: ["it", "en", "fr"],
+  openingHoursSpecification: [
+    { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "09:00", closes: "18:30" },
+    { "@type": "OpeningHoursSpecification", dayOfWeek: "Saturday", opens: "09:00", closes: "13:30" },
+  ],
+  sameAs: [FB, IG, MC],
+  founder: { "@id": MARY_ID },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: t("home.svc.title"),
+    itemListElement: ["svc.full", "svc.partial", "svc.dayof", "svc.destination", "svc.celebrant", "svc.events"].map((k) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: t(k), areaServed: "Puglia" } })),
+  },
+});
+const PERSON = () => ({
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": MARY_ID,
+  name: "Mary Longo",
+  givenName: "Maria",
+  familyName: "Longo",
+  jobTitle: t("person.job"),
+  description: t("about.metaDesc"),
+  image: SITE + ph(MARY),
+  url: SITE + urlFor("/chi-sono"),
+  worksFor: { "@id": BIZ_ID },
+  workLocation: { "@type": "Place", name: "Lecce, Puglia, Italia" },
+  knowsLanguage: ["it", "en", "fr"],
+  knowsAbout: ["Wedding planning", "Destination weddings in Puglia", "Civil and symbolic wedding ceremonies", "Event planning", "Salento"],
+  sameAs: [IG, FB, MC],
+});
+const WEBSITE = () => ({ "@context": "https://schema.org", "@type": "WebSite", url: SITE + urlFor("/"), name: "Mary Longo Wedding Planner", inLanguage: L, publisher: { "@id": BIZ_ID } });
+const CRUMBS = (items) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [[t("nav.home"), "/"], ...items].map(([name, p], i) => ({ "@type": "ListItem", position: i + 1, name: String(name).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(), item: SITE + urlFor(p) })),
+});
+
+/* ---------- pagine (costruite una volta per lingua) ---------- */
+function buildPages() {
 const pages = {};
 
 const HERO = [
@@ -363,18 +674,13 @@ const HERO = [
 
 pages["index.html"] = layout({
   page: "home",
+  slug: "/",
   active: "home",
   bodyClass: "is-home",
   pre: intro(),
+  ld: [ORG(), PERSON(), WEBSITE()],
   head: `${INTRO_HEAD}
-  <link rel="canonical" href="https://www.marylongoweddingplanner.it/">
-  <link rel="preload" as="image" href="${hd(3)}" fetchpriority="high">
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@graph":[
-    {"@type":["LocalBusiness","ProfessionalService"],"@id":"https://www.marylongoweddingplanner.it/#business","name":"Mary Longo Wedding Planner","description":"Wedding & event planner in Lecce: weddings, destination weddings and bespoke events in Puglia and Salento.","url":"https://www.marylongoweddingplanner.it/","image":"https://www.marylongoweddingplanner.it/wp-content/uploads/2023/02/slider_1.jpeg","logo":"https://www.marylongoweddingplanner.it/wp-content/uploads/2020/10/logo-maria-longo.jpg","telephone":"${PHONE}","email":"${MAIL}","priceRange":"€€","address":{"@type":"PostalAddress","streetAddress":"Via Pistoia, 8","addressLocality":"Lecce","postalCode":"73100","addressRegion":"Puglia","addressCountry":"IT"},"geo":{"@type":"GeoCoordinates","latitude":40.3529,"longitude":18.1743},"areaServed":["Lecce","Salento","Puglia","Italia"],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"18:30"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"09:00","closes":"13:30"}],"sameAs":["${FB}","${IG}","${MC}"],"founder":{"@type":"Person","name":"Mary Longo","jobTitle":"Wedding & Event Planner, Celebrant","knowsLanguage":["it","en","fr"]},"aggregateRating":{"@type":"AggregateRating","ratingValue":"5","reviewCount":"3","bestRating":"5"}},
-    {"@type":"WebSite","url":"https://www.marylongoweddingplanner.it/","name":"Mary Longo Wedding Planner","inLanguage":["en","it","fr"]}
-  ]}
-  </script>`,
+  <link rel="preload" as="image" href="${hd(3)}" fetchpriority="high">`,
   body: `
     <!-- PRIMA SCHERMATA: hero + benvenuto, alti esattamente quanto lo schermo -->
     <div class="first">
@@ -383,15 +689,17 @@ pages["index.html"] = layout({
         <div class="hero__slide${i === 0 ? " is-on" : ""}" style="background-image:url('${hd(f)}');background-position:${pos}"></div>`).join("")}
       </div>
       <div class="hero__veil"></div>
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="hero__wipe" aria-hidden="true"></div>
+      <div class="hero__petals" aria-hidden="true">${HERO_PETALS.map(([x, d, s, z]) => `<i style="--x:${x}%;--d:${d}s;--s:${s}s;--z:${z}"></i>`).join("")}</div>
       <div class="hero__content">
-        ${tag("span", "home.hero.kicker", 'class="hero__kicker"')}
-        <h1 class="hero__titles">${HERO.map(([, k], i) => `
-          <span class="hero__title${i === 0 ? " is-on" : ""}" data-i18n="${k}">${t(k)}</span>`).join("")}
-        </h1>
-        ${tag("p", "home.hero.sub", 'class="hero__sub"')}
-        ${btn("/chi-sono", "cta.discover", "btn btn--dark")}
+        <h1 class="hero__kicker" data-a="1">${t("home.hero.kicker")}</h1>
+        <p class="hero__titles">${HERO.map(([, k], i) => `
+          <span class="hero__title${i === 0 ? " is-on" : ""}">${words(t(k))}</span>`).join("")}
+        </p>
+        <p class="hero__sub" data-a="2">${t("home.hero.sub")}</p>
+        <span data-a="3">${btn("/chi-sono", "cta.discover", "btn btn--dark btn--shine")}</span>
       </div>
-      <a class="hero__scroll" href="#welcome" aria-label="Scroll"><span></span></a>
     </section>
 
     <section class="welcome" id="welcome">
@@ -405,6 +713,12 @@ pages["index.html"] = layout({
       </div>
     </section>
     </div>
+
+    <!-- ULTIMI MATRIMONI -->
+    ${latestWeddings()}
+
+    <!-- FASCIA LUOGHI -->
+    ${marquee()}
 
     <!-- 3 COLONNE -->
     <section class="sec sec--cols">
@@ -439,8 +753,8 @@ pages["index.html"] = layout({
     <!-- CHI SONO (teaser) -->
     <section class="sec">
       <div class="wrap split">
-        <div class="split__media reveal">
-          <img src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
+        <div class="split__media reveal reveal--img">
+          <img class="is-portrait" src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
           <img class="split__inset" src="${ph(15)}" alt="" loading="lazy">
         </div>
         <div class="split__text reveal d1">
@@ -450,9 +764,9 @@ pages["index.html"] = layout({
           ${tag("p", "about.p1")}
           ${tag("p", "about.p2")}
           <ul class="stats">
-            <li><b>25</b>${tag("span", "stat.events")}</li>
-            <li><b>10</b>${tag("span", "stat.weddings")}</li>
-            <li><b>3</b>${tag("span", "stat.langs")}</li>
+            <li><b data-count="25">25</b>${tag("span", "stat.events")}</li>
+            <li><b data-count="10">10</b>${tag("span", "stat.weddings")}</li>
+            <li><b data-count="3">3</b>${tag("span", "stat.langs")}</li>
           </ul>
           ${btn("/chi-sono", "home.about.btn", "btn")}
         </div>
@@ -500,6 +814,12 @@ pages["index.html"] = layout({
       </div>
     </section>
 
+    <!-- RECENSIONI -->
+    ${reviews()}
+
+    <!-- GUIDE -->
+    ${guideTeaser()}
+
     <!-- INSTAGRAM -->
     <section class="ig">
       <div class="ig__head reveal">
@@ -531,13 +851,14 @@ pages["index.html"] = layout({
 pages["chi-sono.html"] = layout({
   page: "about",
   active: "about",
-  head: `\n  <link rel="canonical" href="https://www.marylongoweddingplanner.it/chi-sono/">`,
+  slug: "/chi-sono",
+  ld: [PERSON(), CRUMBS([[t("nav.about"), "/chi-sono"]])],
   body: `${pageHero(18, "nav.about", "about.hero.title", "center 30%")}
 
     <section class="sec">
       <div class="wrap split">
-        <div class="split__media reveal">
-          <img src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
+        <div class="split__media reveal reveal--img">
+          <img class="is-portrait" src="${ph(MARY)}" alt="Mary Longo, wedding planner a Lecce" loading="lazy">
           <span class="stamp">Mary Longo · Lecce</span>
         </div>
         <div class="split__text reveal d1">
@@ -555,9 +876,9 @@ pages["chi-sono.html"] = layout({
     <section class="sec sec--ivory">
       <div class="wrap">
         <ul class="stats stats--big reveal">
-          <li><b>25</b>${tag("span", "stat.events")}</li>
-          <li><b>10</b>${tag("span", "stat.weddings")}</li>
-          <li><b>3</b>${tag("span", "stat.langs")}</li>
+          <li><b data-count="25">25</b>${tag("span", "stat.events")}</li>
+          <li><b data-count="10">10</b>${tag("span", "stat.weddings")}</li>
+          <li><b data-count="3">3</b>${tag("span", "stat.langs")}</li>
         </ul>
         ${tag("blockquote", "home.quote.text", 'class="bigquote reveal"')}
       </div>
@@ -579,12 +900,13 @@ const svcGrid = (prefix) => `
 pages["wedding.html"] = layout({
   page: "wed",
   active: "wedding",
-  head: `\n  <link rel="canonical" href="https://www.marylongoweddingplanner.it/wedding/">`,
+  slug: "/wedding",
+  ld: [CRUMBS([[t("nav.wedding"), "/wedding"]])],
   body: `${pageHero(42, "nav.wedding", "wed.hero.title", "center 65%")}
 
     <section class="sec">
       <div class="wrap split split--rev">
-        <div class="split__media reveal">
+        <div class="split__media reveal reveal--img">
           <img src="${ph(6)}" alt="Nozze in Puglia curate da Mary Longo Wedding Planner" loading="lazy">
         </div>
         <div class="split__text reveal d1">
@@ -626,12 +948,13 @@ ${ctaBand(14, "wed.cta.title", "wed.cta.text")}`,
 pages["eventi.html"] = layout({
   page: "ev",
   active: "events",
-  head: `\n  <link rel="canonical" href="https://www.marylongoweddingplanner.it/eventi/">`,
+  slug: "/eventi",
+  ld: [CRUMBS([[t("nav.events"), "/eventi"]])],
   body: `${pageHero(58, "nav.events", "ev.hero.title", "center 40%")}
 
     <section class="sec">
       <div class="wrap split">
-        <div class="split__media reveal">
+        <div class="split__media reveal reveal--img">
           <img src="${ph(19)}" alt="Evento organizzato da Mary Longo a Lecce" loading="lazy">
         </div>
         <div class="split__text reveal d1">
@@ -652,29 +975,41 @@ pages["eventi.html"] = layout({
 ${ctaBand(1, "ev.cta.title", "ev.cta.text")}`,
 });
 
+/* FAQ: tutte le chiavi faq.qN / faq.aN, raggruppate per tema (faq.groups) */
+const FAQ_GROUPS = [
+  ["faq.g1", [20, 1, 8, 9, 10]],
+  ["faq.g2", [2, 3, 11, 12, 13]],
+  ["faq.g3", [4, 15, 16, 17, 14]],
+  ["faq.g4", [5, 7, 18, 19, 6]],
+];
+const FAQ_IDS = FAQ_GROUPS.flatMap(([, ids]) => ids);
 pages["faq.html"] = layout({
   page: "faq",
+  slug: "/faq",
   active: "faq",
-  head: `\n  <link rel="canonical" href="https://www.marylongoweddingplanner.it/faq/">
-  <script type="application/ld+json">
-  ${JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [1, 2, 3, 4, 5, 6, 7].map((i) => ({ "@type": "Question", name: t("faq.q" + i), acceptedAnswer: { "@type": "Answer", text: t("faq.a" + i) } })),
-  })}
-  </script>`,
+  ld: [
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      inLanguage: L,
+      mainEntity: FAQ_IDS.map((i) => ({ "@type": "Question", name: faqText(t("faq.q" + i)), acceptedAnswer: { "@type": "Answer", text: faqText(t("faq.a" + i)) } })),
+    },
+    CRUMBS([[t("nav.faq.long"), "/faq"]]),
+  ],
   body: `${pageHero(25, "nav.faq.long", "faq.title", "center 55%")}
 
     <section class="sec">
       <div class="wrap wrap--narrow">
         ${tag("p", "faq.lead", 'class="lead center reveal"')}
+        ${FAQ_GROUPS.map(([g, ids]) => `
+        <h2 class="faq__group reveal">${t(g)}</h2>
         <div class="faq">
-          ${[1, 2, 3, 4, 5, 6, 7].map((i) => `
-          <div class="faq__item reveal">
-            <button class="faq__q" type="button" aria-expanded="false">${tag("span", "faq.q" + i)}<i aria-hidden="true"></i></button>
-            <div class="faq__a"><div>${tag("p", "faq.a" + i)}</div></div>
+          ${ids.map((i) => `
+          <div class="faq__item reveal" id="faq-${i}">
+            <button class="faq__q" type="button" aria-expanded="false"><span>${t("faq.q" + i)}</span><i aria-hidden="true"></i></button>
+            <div class="faq__a"><div><p>${t("faq.a" + i)}</p></div></div>
           </div>`).join("")}
-        </div>
+        </div>`).join("")}
         <div class="center reveal" style="margin-top:30px">
           ${tag("p", "faq.more", 'class="h-script"')}
           ${btn("/contatti", "cta.contactMe", "btn btn--dark")}
@@ -686,7 +1021,8 @@ pages["faq.html"] = layout({
 pages["contatti.html"] = layout({
   page: "ct",
   active: "contact",
-  head: `\n  <link rel="canonical" href="https://www.marylongoweddingplanner.it/contatti/">`,
+  slug: "/contatti",
+  ld: [ORG(), CRUMBS([[t("nav.contact"), "/contatti"]])],
   body: `${pageHero(3, "nav.contact", "contact.title", "center 60%")}
 
     <section class="sec">
@@ -723,10 +1059,10 @@ pages["contatti.html"] = layout({
 
 pages["real-wedding.html"] = layout({
   page: "pf",
+  slug: "/real-wedding",
   active: "rw",
-  head: `
-  <link rel="canonical" href="https://www.marylongoweddingplanner.it/real-wedding/">`,
-  body: `${pageHero(121, "home.pf.kicker", "pf.title", "center 55%")}
+  ld: [CRUMBS([[t("nav.portfolio"), "/real-wedding"]])],
+  body: `${pageHero(151, "home.pf.kicker", "pf.title", "center 55%")}
 
     <section class="sec">
       <div class="wrap">
@@ -740,28 +1076,43 @@ ${ctaBand(24, "cta.dream", "contact.lead")}`,
 PROJECTS.forEach((p, idx) => {
   const next = PROJECTS[(idx + 1) % PROJECTS.length];
   const cover = p.photos[0];
+  const name = faqText(t(p.key));
   pages[`real-wedding-${p.n}.html`] = layout({
     page: "rw",
+    slug: `/real-wedding-${p.n}`,
+    title: `${name} — Real Wedding ${p.roman} | Mary Longo Wedding Planner`,
+    desc: faqText(t(p.text)),
+    image: hd(cover),
     active: "rw",
-    head: `
-  <link rel="canonical" href="https://www.marylongoweddingplanner.it/real-wedding-${p.n}/">`,
+    ld: [
+      CRUMBS([[t("nav.portfolio"), "/real-wedding"], [name, `/real-wedding-${p.n}`]]),
+      {
+        "@context": "https://schema.org",
+        "@type": "ImageGallery",
+        name,
+        description: faqText(t(p.text)),
+        inLanguage: L,
+        author: { "@id": MARY_ID },
+        image: p.photos.slice(0, 8).map((id) => SITE + ph(id)),
+      },
+    ],
     body: `
     <section class="rwh">
       <div class="rwh__text reveal">
         <a class="rwh__back" href="/real-wedding">← <span data-i18n="rw.all">${t("rw.all")}</span></a>
         <span class="kicker">Real Wedding · ${p.roman}</span>
         ${tag("h1", p.key, 'class="h-display"')}
-        ${tag("p", p.text || "rw.text")}
+        ${tag("p", p.text)}
         <nav class="rwh__nav" aria-label="Real Wedding">${PROJECTS.map((q) => `<a href="/real-wedding-${q.n}"${q.n === p.n ? ' class="is-active" aria-current="page"' : ""}>${q.roman}</a>`).join("")}</nav>
       </div>
-      <div class="rwh__media reveal d1"><img src="${hd(cover)}" alt="${ALT} — ${t(p.key)}" style="object-position:${p.pos}"></div>
+      <div class="rwh__media reveal reveal--img d1"><img src="${hd(cover)}" alt="${ALT} — ${t(p.key)}" style="object-position:${p.pos}"></div>
     </section>
 
     <section class="sec sec--ivory">
       <div class="wrap">
         <div class="shead reveal"><span class="orn" aria-hidden="true"></span>${tag("span", "rw.gallery", 'class="kicker"')}<h2 class="stitle">${p.photos.length} <span data-i18n="rw.photos">${t("rw.photos")}</span></h2></div>
         <div class="gal">
-          ${p.photos.map((id, i) => `<figure class="gal__item reveal" style="--r:${ratio(id).toFixed(3)}"><img data-lb data-full="${hd(id)}" src="${sm(id)}" decoding="async" alt="${ALT} — ${t(p.key)} ${i + 1}" loading="lazy"></figure>`).join("\n          ")}
+          ${p.photos.map((id, i) => `<figure class="gal__item reveal" style="--r:${ratio(id).toFixed(3)}"><img data-lb data-full="${hd(id)}"${cap(id) ? ` data-cap="${attr(cap(id))}"` : ""} src="${sm(id)}" decoding="async" alt="${cap(id) ? attr(cap(id)) + " — " + attr(t(p.key)) : `${ALT} — ${t(p.key)} ${i + 1}`}" loading="lazy">${cap(id) ? `<figcaption>${cap(id)}</figcaption>` : ""}</figure>`).join("\n          ")}
         </div>
       </div>
     </section>
@@ -780,12 +1131,9 @@ PROJECTS.forEach((p, idx) => {
 
 const legalPage = (key) => layout({
   page: key,
+  slug: key === "cookie" ? "/cookie-policy" : "/privacy",
   active: "",
   bodyClass: "is-legal",
-  head: `
-  <link rel="canonical" href="https://www.marylongoweddingplanner.it/${key === "cookie" ? "cookie-policy" : "privacy"}/">`,
-  scripts: `
-  <script src="${asset("js/i18n-legal.js")}"></script>`,
   body: `
     <section class="sec legal">
       <div class="wrap wrap--narrow">
@@ -799,12 +1147,86 @@ const legalPage = (key) => layout({
 pages["privacy.html"] = legalPage("privacy");
 pages["cookie-policy.html"] = legalPage("cookie");
 
+Object.assign(pages, guidePages());
+return pages;
+}
+
+/* link interni: nelle lingue diverse dall'italiano "/x" diventa "/en/x" ("/" → "/en/");
+   restano invariati asset, URL esterni e i link del selettore lingua (marcati "@/") */
+function prefixLinks(html) {
+  if (L !== "it") html = html.replace(/href="\/(?!assets\/|@)([^"]*)"/g, (m, p) => `href="${pre()}/${p}"`);
+  return html.replace(/href="@\//g, 'href="/');
+}
+
 /* ---------- controllo traduzioni + scrittura ---------- */
 const missing = [];
 for (const l of I18N.langs) for (const k in EN) if (!I18N.dict[l][k]) missing.push(l + ":" + k);
 if (missing.length) console.warn("Traduzioni vuote:", missing.join(", "));
 
-for (const [file, html] of Object.entries(pages)) {
-  fs.writeFileSync(path.join(OUT, file), html);
-  console.log("scritto", file);
+const SITEMAP = [];
+let written = 0;
+for (const lang of LANGS) {
+  L = lang;
+  const dir = lang === "it" ? OUT : path.join(OUT, lang);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [file, html] of Object.entries(buildPages())) {
+    const out = path.join(dir, file);
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    fs.writeFileSync(out, prefixLinks(html));
+    written++;
+    if (lang === "it") SITEMAP.push(file);
+  }
 }
+console.log(`scritte ${written} pagine (${LANGS.length} lingue)`);
+
+/* sitemap.xml con le alternative di lingua, robots.txt e llms.txt (per gli assistenti AI) */
+function sitemap() {
+  const urls = [];
+  L = "it";
+  const all = buildPages();
+  for (const file of SITEMAP) {
+    const alt = all[file].match(/<link rel="alternate" hreflang="[a-z-]+" href="[^"]+">/g) || [];
+    const map = Object.fromEntries(alt.map((a) => a.match(/hreflang="([^"]+)" href="([^"]+)"/).slice(1)));
+    for (const l of LANGS) {
+      urls.push(`  <url>
+    <loc>${map[l]}</loc>
+${[...LANGS, "x-default"].map((h) => `    <xhtml:link rel="alternate" hreflang="${h}" href="${map[h]}"/>`).join("\n")}
+  </url>`);
+    }
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls.join("\n")}
+</urlset>
+`;
+}
+fs.writeFileSync(path.join(OUT, "sitemap.xml"), sitemap());
+fs.writeFileSync(path.join(OUT, "robots.txt"), `# Mary Longo Wedding Planner — tutti i motori di ricerca e gli assistenti AI sono benvenuti
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: ${SITE}/sitemap.xml
+`);
+fs.writeFileSync(path.join(OUT, "llms.txt"), llmsTxt());
+console.log("scritti sitemap.xml, robots.txt, llms.txt");
